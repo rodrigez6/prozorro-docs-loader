@@ -28,31 +28,42 @@ public class DocumentService {
 
     }
 
-    private List<Document> loadDocumentsFromPage(String pageUrl){
+    private List<Document> loadDocumentsFromPage(String pageUrl) {
+        String pageJson = getPageJson(pageUrl);
+        JsonArray jsonArray = getJsonArray(pageJson);
+        return getDocuments(jsonArray);
+    }
 
-        List<Document> documents = new ArrayList<>();
+    String getPageJson(String pageUrl){
 
         Request request = new Request.Builder()
                 .url(pageUrl)
                 .build();
 
+        String pageJson = null;
+
         try (Response response = httpClient.newCall(request).execute()) {
-
-            String jsonString = response.body().string();
-            JsonObject jsonObject = new JsonParser().parse(jsonString).getAsJsonObject();
-            JsonArray jsonArray = jsonObject.getAsJsonArray("data");
-            Gson gson = new Gson();
-
-            for (JsonElement jsonDocument : jsonArray) {
-                Document document = gson.fromJson(jsonDocument, Document.class);
-                documents.add(document);
-            }
-
+            pageJson = response.body().string();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return documents;
+        return pageJson;
+    }
 
+    public JsonArray getJsonArray(String pageJson){
+        JsonElement jsonElement = new JsonParser().parse(pageJson);
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        return jsonObject.getAsJsonArray("data");
+    }
+
+    public List<Document> getDocuments(JsonArray jsonArray){
+        List<Document> documents = new ArrayList<>();
+        Gson gson = new Gson();
+        for (JsonElement jsonDocument : jsonArray) {
+            Document document = gson.fromJson(jsonDocument, Document.class);
+            documents.add(document);
+        }
+        return documents;
     }
 }
